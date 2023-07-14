@@ -1,7 +1,9 @@
 import pygame
 import time
 import random
+class snake_game{
 
+}
 # Initialize pygame
 pygame.init()
 
@@ -34,13 +36,13 @@ score_font = pygame.font.SysFont(None, 35)
 score=0
 def our_snake(snake_block, snake_list):
     cnt=0
-    global score
     for x in snake_list[::-1]:
         cnt+=1
         if cnt==1:
             pygame.draw.rect(dis, red, [x[0], x[1], snake_block, snake_block])
         else:
             pygame.draw.rect(dis, green, [x[0], x[1], snake_block, snake_block])
+    global score
     show_score(score)
 
 
@@ -53,8 +55,6 @@ def show_score(score):
     dis.blit(score_text, [10, 10])
 
 def game_loop():
-    global score
-    global snake_speed
     game_over = False
     game_close = False
 
@@ -135,12 +135,15 @@ def game_loop():
         pygame.display.update()
 
         if x1 == foodx and y1 == foody:
-            foodx = round(random.randrange(0, dis_width - snake_block) / snake_block) * snake_block
-            foody = round(random.randrange(0, dis_height - snake_block) / snake_block) * snake_block
+            global score
+            score+=100
+            while([foodx,foody] in snake_List):
+                foodx = round(random.randrange(0, dis_width - snake_block) / snake_block) * snake_block
+                foody = round(random.randrange(0, dis_height - snake_block) / snake_block) * snake_block
 
             Length_of_snake += 1
-            snake_speed += 1
-            score+=1
+
+
         clock.tick(snake_speed)
 
     pygame.quit()
