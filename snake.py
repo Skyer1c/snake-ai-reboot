@@ -21,7 +21,7 @@ pygame.display.set_caption('Snake Game')
 clock = pygame.time.Clock()
 
 snake_block = 50
-snake_speed = 10
+snake_speed = 8
 
 block_count=12
 
@@ -62,7 +62,9 @@ def game_loop():
 
     snake_List = []
     Length_of_snake = 1
-
+    foodx=0
+    foody=0
+    
     foodx = round(random.randrange(0, dis_width - snake_block) / snake_block) * snake_block
     foody = round(random.randrange(0, dis_height - snake_block) / snake_block) * snake_block
     last_event=0
@@ -131,8 +133,9 @@ def game_loop():
         pygame.display.update()
 
         if x1 == foodx and y1 == foody:
-            foodx = round(random.randrange(0, dis_width - snake_block) / snake_block) * snake_block
-            foody = round(random.randrange(0, dis_height - snake_block) / snake_block) * snake_block
+            while([foodx,foody] in snake_List):
+                foodx = round(random.randrange(0, dis_width - snake_block) / snake_block) * snake_block
+                foody = round(random.randrange(0, dis_height - snake_block) / snake_block) * snake_block
 
             Length_of_snake += 1
 
