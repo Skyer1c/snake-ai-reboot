@@ -20,7 +20,7 @@ pygame.display.set_caption('Snake Game')
 
 clock = pygame.time.Clock()
 
-snake_block = 100
+snake_block = 50
 snake_speed = 10
 
 block_count=12
@@ -46,6 +46,9 @@ def message(msg, color):
     mesg = font_style.render(msg, True, color)
     dis.blit(mesg, [dis_width/6, dis_height/3])
 
+def show_score(score):
+    score_text = score_font.render("Score: " + str(score), True, white)
+    dis.blit(score_text, [10, 10])
 
 def game_loop():
     game_over = False
@@ -67,7 +70,7 @@ def game_loop():
 
         while game_close:
             dis.fill(blue)
-            message("You lost! Press Q-Quit or C-Play Again", red)
+            message("You lost! \nPress Q-Quit or C-Play Again", red)
             pygame.display.update()
 
             for event in pygame.event.get():
@@ -78,8 +81,10 @@ def game_loop():
                     if event.key == pygame.K_c:
                         game_loop()
 
-
+        changed=0
         for event in pygame.event.get():
+            if changed==1:
+                continue
             if event.type == pygame.QUIT:
                 game_over = True
             if event.type == pygame.KEYDOWN:
@@ -87,18 +92,22 @@ def game_loop():
                     x1_change = -snake_block
                     y1_change = 0
                     last_event=1
+                    changed=1
                 elif event.key == pygame.K_RIGHT and last_event!=1:
                     x1_change = snake_block
                     y1_change = 0
                     last_event= 2
+                    changed=1
                 elif event.key == pygame.K_UP and last_event!=4:
                     y1_change = -snake_block
                     x1_change = 0
                     last_event=3
+                    changed=1
                 elif event.key == pygame.K_DOWN and last_event!=3:
                     y1_change = snake_block
                     x1_change = 0
                     last_event=4
+                    changed=1
         if x1 >= dis_width or x1 < 0 or y1 >= dis_height or y1 < 0:
             game_close = True
 
@@ -124,6 +133,7 @@ def game_loop():
         if x1 == foodx and y1 == foody:
             foodx = round(random.randrange(0, dis_width - snake_block) / snake_block) * snake_block
             foody = round(random.randrange(0, dis_height - snake_block) / snake_block) * snake_block
+
             Length_of_snake += 1
 
         clock.tick(snake_speed)
