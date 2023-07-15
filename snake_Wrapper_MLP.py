@@ -30,21 +30,4 @@ class SnakeEnv(gym.Env):
     def render(self):
         self.game.render()
     def generate_observation(self):
-        obs = np.zeros((self.game.block_count, self.game.block_count), dtype=np.uint8)
-
-        # Set the snake body to gray with linearly decreasing intensity from head to tail.
-        obs[tuple(np.transpose(self.game.snake_list))] = np.linspace(200, 50, len(self.game.snake_list), dtype=np.uint8)
-        
-        # Stack single layer into 3-channel-image.
-        obs = np.stack((obs, obs, obs), axis=-1)
-        
-        # Set the snake head to green and the tail to blue
-        obs[tuple(self.game.snake_list[0])] = [0, 255, 0]
-        obs[tuple(self.game.snake_list[-1])] = [255, 0, 0]
-
-        # Set the food to red
-        obs[self.game.food] = [0, 0, 255]
-
-        # Enlarge the observation to 84x84
-
-        return obs
+        pass
