@@ -29,10 +29,10 @@ class Agent:
         state = [
             # Danger straight
             game.distou(), game.distor(), game.distod(), game.distol(),
-            head[0]/snake_block,
-            head[1]/snake_block,
-            food[0]/snake_block,
-            food[1]/snake_block,
+            head[0]//snake_block,
+            head[1]//snake_block,
+            food[0]//snake_block,
+            food[1]//snake_block,
             game.direction
 
             # Food location
@@ -59,7 +59,7 @@ class Agent:
 
     def get_action(self, state):
         # random moves: tradeoff exploration / exploitation
-        self.epsilon = 80 - self.n_games
+        self.epsilon = 100 - self.n_games*0.1
         final_move=0
         if random.randint(0, 200) < self.epsilon:
             move = random.randint(0, 3)
@@ -79,7 +79,7 @@ def train():
     total_score = 0
     record = 0
     agent = Agent()
-    game = SnakeGame(50, 12)
+    game = SnakeGame(50, 5)
     while True:
         # get old state
         state_old = agent.get_state(game)
