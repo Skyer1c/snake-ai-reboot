@@ -1,116 +1,120 @@
-import os
-import sys
-import random
-
 import torch
-from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.vec_env import SubprocVecEnv
-from stable_baselines3.common.callbacks import CheckpointCallback
-from stable_baselines3.common.env_checker import check_env
-from sb3_contrib import MaskablePPO
-from sb3_contrib.common.wrappers import ActionMasker
+import random
+import numpy as np
+from collections import deque
+from snake2 import SnakeGame
+from DQN_model import Linear_QNet, QTrainer
+from helper import plot
 
-from snake_Wrapper_CNN import SnakeEnv
+MAX_MEMORY = 100_000
+BATCH_SIZE = 1000
+LR = 0.001
 
-env = SnakeEnv(12,20,seed=0)
-check_env(env,warn=True)
-LOG_DIR = "logs"
 
-os.makedirs(LOG_DIR, exist_ok=True)
+class Agent:
 
-def linear_schedule(initial_value, final_value=0.0):
+    def __init__(self):
+        self.n_games = 0
+        self.epsilon = 0  # randomness
+        self.gamma = 0.9  # discount rate
+        self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
+        self.model = Linear_QNet(9, 256, 1)
+        self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
-    if isinstance(initial_value, str):
-        initial_value = float(initial_value)
-        final_value = float(final_value)
-        assert (initial_value > 0.0)
+    def get_state(self, game):
+        block_count = game.block_count
+        snake_block = game.snake_block
+        head = game.snake_list[0]
+        food = game.food
+        state = [
+            # Danger straight
+            game.distou(), game.distor(), game.distod(), game.distol(),
+            head[0]/snake_block,
+            head[1]/snake_block,
+            food[0]/snake_block,
+            food[1]/snake_block,
+            game.direction
 
-    def scheduler(progress):
-        return final_value + progress * (initial_value - final_value)
+            # Food location
+        ]
+        print(state,"fuckfuck")
+        return np.array(state, dtype=int)
 
-    return scheduler
+    def remember(self, state, action, reward, next_state, done):
+        self.memory.append((state, action, reward, next_state, done))  # popleft if MAX_MEMORY is reached
 
-def make_env(seed=0):
-    def _init():
-        env = SnakeEnv(seed=seed)
-        env = ActionMasker(env, SnakeEnv.get_action_mask)
-        env = Monitor(env)
-        env.seed(seed)
-        return env
-    return _init
+    def train_long_memory(self):
+        if len(self.memory) > BATCH_SIZE:
+            mini_sample = random.sample(self.memory, BATCH_SIZE)  # list of tuples
+        else:
+            mini_sample = self.memory
 
-def main():
+        states, actions, rewards, next_states, dones = zip(*mini_sample)
+        self.trainer.train_step(states, actions, rewards, next_states, dones)
+        # for state, action, reward, nexrt_state, done in mini_sample:
+        #    self.trainer.train_step(state, action, reward, next_state, done)
 
-    # Generate a list of random seeds for each environment.
-    seed_set = set()
-    while len(seed_set) < 32:
-        seed_set.add(random.randint(0, 1e9))
+    def train_short_memory(self, state, action, reward, next_state, done):
+        self.trainer.train_step(state, action, reward, next_state, done)
 
-    # Create the Snake environment.
-    env = SubprocVecEnv([make_env(seed=s) for s in seed_set])
+    def get_action(self, state):
+        # random moves: tradeoff exploration / exploitation
+        self.epsilon = 80 - self.n_games
+        final_move=0
+        if random.randint(0, 200) < self.epsilon:
+            move = random.randint(0, 3)
+            final_move=move
+        else:
+            state0 = torch.tensor(state, dtype=torch.float)
+            prediction = self.model(state0)
+            move = torch.argmax(prediction).item()
+            final_move=move
 
-    if torch.backends.mps.is_available():
-        lr_schedule = linear_schedule(5e-4, 2.5e-6)
-        clip_range_schedule = linear_schedule(0.150, 0.025)
-        # Instantiate a PPO agent using MPS (Metal Performance Shaders).
-        model = MaskablePPO(
-            "CnnPolicy",
-            env,
-            device="mps",
-            verbose=1,
-            n_steps=1024,
-            batch_size=512*2,
-            n_epochs=4,
-            gamma=0.94,
-            learning_rate=lr_schedule,
-            clip_range=clip_range_schedule,
-            tensorboard_log=LOG_DIR
-        )
-    else:
-        lr_schedule = linear_schedule(2.5e-4, 2.5e-6)
-        clip_range_schedule = linear_schedule(0.150, 0.025)
-        # Instantiate a PPO agent using CUDA.
-        model = MaskablePPO(
-            "CnnPolicy",
-            env,
-            device="cuda",
-            verbose=1,
-            n_steps=2048,
-            batch_size=512,
-            n_epochs=4,
-            gamma=0.94,
-            learning_rate=lr_schedule,
-            clip_range=clip_range_schedule,
-            tensorboard_log=LOG_DIR
-        )
+        return final_move
 
-    # Set the save directory
-    if torch.backends.mps.is_available():
-        save_dir = "trained_models_cnn_mps"
-    else:
-        save_dir = "trained_models_cnn"
-    os.makedirs(save_dir, exist_ok=True)
 
-    checkpoint_interval = 15625 # checkpoint_interval * num_envs = total_steps_per_checkpoint
-    checkpoint_callback = CheckpointCallback(save_freq=checkpoint_interval, save_path=save_dir, name_prefix="ppo_snake")
+def train():
+    plot_scores = []
+    plot_mean_scores = []
+    total_score = 0
+    record = 0
+    agent = Agent()
+    game = SnakeGame(50, 12)
+    while True:
+        # get old state
+        state_old = agent.get_state(game)
 
-    # Writing the training logs from stdout to a file
-    original_stdout = sys.stdout
-    log_file_path = os.path.join(save_dir, "training_log.txt")
-    with open(log_file_path, 'w') as log_file:
-        sys.stdout = log_file
+        # get move
+        final_move = agent.get_action(state_old)
 
-        model.learn(
-            total_timesteps=int(100000000),
-            callback=[checkpoint_callback]
-        )
-        env.close()
+        # perform move and get new state
+        reward, done, score = game.step(final_move)
+        state_new = agent.get_state(game)
 
-    # Restore stdout
-    sys.stdout = original_stdout
+        # train short memory
+        agent.train_short_memory(state_old, final_move, reward, state_new, done)
 
-    # Save the final model
-    model.save(os.path.join(save_dir, "ppo_snake_final.zip"))
+        # remember
+        agent.remember(state_old, final_move, reward, state_new, done)
 
-if __name__ == "__main__":
-    main()
+        if done:
+            # train long memory, plot result
+            game.reset()
+            agent.n_games += 1
+            agent.train_long_memory()
+
+            if score > record:
+                record = score
+                agent.model.save()
+
+            print('Game', agent.n_games, 'Score', score, 'Record:', record)
+
+            plot_scores.append(score)
+            total_score += score
+            mean_score = total_score / agent.n_games
+            plot_mean_scores.append(mean_score)
+            plot(plot_scores, plot_mean_scores)
+
+
+if __name__ == '__main__':
+    train()
