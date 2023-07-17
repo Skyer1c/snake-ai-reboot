@@ -27,6 +27,8 @@ class SnakeEnv(gym.Env):
 
         obs = self._generate_observation()
         return obs
+    def get_action(self):
+        self.epsilon
     def render(self):
         self.game.render()
     def generate_observation(self):
