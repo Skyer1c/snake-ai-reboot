@@ -6,7 +6,7 @@ from snake2 import SnakeGame
 from DQN_model import Linear_QNet, QTrainer
 from helper import plot
 
-MAX_MEMORY = 1000000
+MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
 LR = 0.005
 
@@ -19,7 +19,7 @@ class Agent:
         self.epsilon = 0  # randomness
         self.gamma = 0.9  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
-        self.model = Linear_QNet(6, 256,128, 1)
+        self.model = Linear_QNet(5, 256,128, 1)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
     def get_state(self, game):
@@ -34,8 +34,6 @@ class Agent:
             game.isfood(0),
             game.isfood(1)
         ]
-
-        state.append(game.direction)
         return np.array(state, dtype=int)
 
     def remember(self, state, action, reward, next_state, done):
@@ -60,15 +58,14 @@ class Agent:
         self.epsilon = 100 - self.n_games*0.5
         final_move=0
         if random.randint(0, 200) < self.epsilon:
-            while(True):
-                move = random.randint(0,4)
+            move = random.randint(0,3)
             final_move=move
         else:
             state0 = torch.tensor(state, dtype=torch.float)
             prediction = self.model(state0)
             move = torch.argmax(prediction).item()
             final_move=move
-
+        print("final_move=",final_move)
         return final_move
 
 
@@ -81,14 +78,18 @@ def train():
     agent = Agent()
     while True:
         # get old state
+        print("fuckfuck1")
         state_old = agent.get_state(game)
 
         # get move
         final_move = agent.get_action(state_old)
 
         # perform move and get new state
-        reward, done, score = game.step(final_move)
+        # print("fuckfuck2")
+        reward, done, score = game.new_step(final_move)
+        # print("fuckfuck3")
         state_new = agent.get_state(game)
+        # print("fuckfuck4")
 
         # train short memory
         agent.train_short_memory(state_old, final_move, reward, state_new, done)
@@ -96,12 +97,15 @@ def train():
         # remember
         agent.remember(state_old, final_move, reward, state_new, done)
 
+        # print("fuckfuck5")
         if done:
             # train long memory, plot result
+            # print("fuckfuck6")
             game.reset()
+            # print("fuckfuck7")
             agent.n_games += 1
             agent.train_long_memory()
-
+            # print("fuckfuck8")
             if score > record:
                 record = score
                 agent.model.save()
