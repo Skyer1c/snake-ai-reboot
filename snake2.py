@@ -27,6 +27,7 @@ class SnakeGame:
         self.game_over = False
         self.dis = pygame.display.set_mode((self.dis_width, self.dis_height))
         pygame.display.set_caption('Snake Game')
+
         clock = pygame.time.Clock()
 
         # snake_list: 蛇身体的数组
@@ -98,31 +99,48 @@ class SnakeGame:
             cnt += 1
         return cnt-1
     def step(self, action):
-        x1, y1 = self.snake_list[0]
+        x1, y1 = self.snake_list[-1]
         if len(self.snake_list) > self.snake_length:
             del self.snake_list[self.snake_length - 1]
         if action == 0:  # up
             y1 -= self.snake_block
+            if self.direction==2:
+                self.reward-=0.5
             self.direction = 0
-        elif action == 1:  # down
-            y1 += self.snake_block
-            self.direction = 1
-        elif action == 2:  # left
-            x1 -= self.snake_block
-            self.direction = 2
-        elif action == 3:  # right
+        elif action == 1:  # right
             x1 += self.snake_block
+            if self.direction==3:
+                self.reward-=0.5
+            self.direction = 1
+        elif action == 2:  # down
+            y1 += self.snake_block
+            if self.direction==0:
+                self.reward-=0.5
+            self.direction = 2
+        elif action == 3:  # left
+            x1 -= self.snake_block
+            if self.direction==1:
+                self.reward-=0.5
             self.direction = 3
-
         if x1 >= self.dis_width or x1 < 0 or y1 >= self.dis_height or y1 < 0 or [x1, y1] in self.snake_list:
-            self.reward=-1
+            self.reward-=5*len(self.snake_list)
             self.game_over = True
+        else:
+            self.reward+=0.3
         self.snake_list.append([x1,y1])
+
+        # if len(self.snake_list)>1:
+        #     a = np.array(self.snake_list[0]) - np.array(self.food)
+        #     b = np.array(self.snake_list[1]) - np.array(self.food)
+        #     if np.linalg.norm(a)>np.linalg.norm(b):
+        #         self.reward-=7*np.linalg.norm(a)
+        #     else:
+        #         self.reward += np.linalg.norm(a)
         if len(self.snake_list) > self.snake_length:
             del self.snake_list[0]
         if x1 == self.food[0] and y1 == self.food[1]:
             self.snake_length+=1
-            self.reward =10*self.snake_length
+            self.reward +=5*self.snake_length
             self.score += 1
             foodx = round(
                 random.randrange(0, self.dis_width - self.snake_block) / self.snake_block) * self.snake_block
@@ -194,108 +212,58 @@ class SnakeGame:
         score_text = score_font.render("Score: " + str(score), True, white)
         self.dis.blit(score_text, [10, 10])
 
-    # def game_loop(self):
-    #     game_over = False
-    #     game_close = False
-    #
-    #     x1 = self.block_count // 2 * self.snake_block
-    #     y1 = self.block_count // 2 * self.snake_block
-    #
-    #     x1_change = 0
-    #     y1_change = 0
-    #
-    #     snake_List = []
-    #     length_of_snake = 1
-    #
-    #     foodx = round(random.randrange(0, self.dis_width - self.snake_block) / self.snake_block) * self.snake_block
-    #     foody = round(random.randrange(0, self.dis_height - self.snake_block) / self.snake_block) * self.snake_block
-    #     last_event = 0
-    #
-    #     self.dis = pygame.display.set_mode((self.dis_width, self.dis_height))
-    #     pygame.display.set_caption('Snake Game')
-    #     clock = pygame.time.Clock()
-    #
-    #     while not game_over:
-    #         while game_close:
-    #             self.dis.fill(blue)
-    #             self.message("You lost! Press Q-Quit or C-Play Again", red)
-    #             pygame.display.update()
-    #
-    #             for event in pygame.event.get():
-    #                 if event.type == pygame.KEYDOWN:
-    #                     if event.key == pygame.K_q:
-    #                         game_over = True
-    #                         game_close = False
-    #                     if event.key == pygame.K_c:
-    #                         self.game_loop()
-    #
-    #         changed = 0
-    #         for event in pygame.event.get():
-    #             if changed == 1:
-    #                 continue
-    #             if event.type == pygame.QUIT:
-    #                 game_over = True
-    #             if event.type == pygame.KEYDOWN:
-    #                 if event.key == pygame.K_LEFT and last_event != 2:
-    #                     x1_change = -self.snake_block
-    #                     y1_change = 0
-    #                     last_event = 1
-    #                     changed = 1
-    #                 elif event.key == pygame.K_RIGHT and last_event != 1:
-    #                     x1_change = self.snake_block
-    #                     y1_change = 0
-    #                     last_event = 2
-    #                     changed = 1
-    #                 elif event.key == pygame.K_UP and last_event != 4:
-    #                     y1_change = -self.snake_block
-    #                     x1_change = 0
-    #                     last_event = 3
-    #                     changed = 1
-    #                 elif event.key == pygame.K_DOWN and last_event != 3:
-    #                     y1_change = self.snake_block
-    #                     x1_change = 0
-    #                     last_event = 4
-    #                     changed = 1
-    #
-    #         if x1 >= self.dis_width or x1 < 0 or y1 >= self.dis_height or y1 < 0:
-    #             game_close = True
-    #
-    #         x1 += x1_change
-    #         y1 += y1_change
-    #         self.dis.fill(black)
-    #         pygame.draw.rect(self.dis, yellow, [foodx, foody, self.snake_block, self.snake_block])
-    #         snake_Head = []
-    #         snake_Head.append(x1)
-    #         snake_Head.append(y1)
-    #         snake_List.append(snake_Head)
-    #         if len(snake_List) > Length_of_snake:
-    #             del snake_List[0]
-    #
-    #         for x in snake_List[:-1]:
-    #             if x == snake_Head:
-    #                 game_close = True
-    #
-    #         self.our_snake(self.snake_block, snake_List)
-    #
-    #         pygame.display.update()
-    #
-    #         if x1 == foodx and y1 == foody:
-    #             self.score += 1
-    #             while [foodx, foody] in snake_List:
-    #                 foodx = round(
-    #                     random.randrange(0, self.dis_width - self.snake_block) / self.snake_block) * self.snake_block
-    #                 foody = round(
-    #                     random.randrange(0, self.dis_height - self.snake_block) / self.snake_block) * self.snake_block
-    #
-    #             Length_of_snake += 1
-    #
-    #         clock.tick(self.snake_speed)
-    #
-    #     pygame.quit()
+    def game_loop(self):
+        self.reset()
+        game_close=0
+        while not self.game_over:
+            while game_close:
+                self.dis.fill(blue)
+                self.message("You lost! Press Q-Quit or C-Play Again", red)
+                pygame.display.update()
+                for event in pygame.event.get():
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_q:
+                            game_over = True
+                            game_close = False
+                        if event.key == pygame.K_c:
+                            self.game_loop()
+
+            changed = 0
+            last_event=-1
+            for event in pygame.event.get():
+                if changed == 1:
+                    continue
+                if event.type == pygame.QUIT:
+                    game_over = True
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_LEFT and last_event != 1:
+                        self.step(3)
+                        last_event = 3
+                        changed = 1
+                    elif event.key == pygame.K_RIGHT and last_event != 3:
+                        self.step(1)
+                        last_event = 2
+                        changed = 1
+                    elif event.key == pygame.K_UP and last_event != 2:
+
+                        self.step(0)
+                        last_event = 0
+                        changed = 1
+                    elif event.key == pygame.K_DOWN and last_event != 0:
+
+                        self.step(2)
+                        last_event = 2
+                        changed = 1
+
+            if self.isSafe(self.snake_list[0][0],self.snake_list[0][1]):
+                game_close = True
+
+        pygame.quit()
 
 
 # Create an instance of the SnakeGame class
 # game = SnakeGame(50, 12)
+# game.reset()
 # game.game_loop()
 
 # Start the game loop
