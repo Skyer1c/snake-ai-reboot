@@ -57,47 +57,68 @@ class SnakeGame:
         self.score = 0
         self.reward=0
 
-    def distol(self):
-        x1, y1 = self.snake_list[0]
-        x1 -= self.snake_block
-        cnt = 1
-        while (self.isSafe(x1, y1)):
-            x1 -= self.snake_block
-            cnt += 1
-        return cnt-1
-
-    def distol(self):
-        x1, y1 = self.snake_list[0]
-        x1 -= self.snake_block
-        cnt = 1
-        while (self.isSafe(x1, y1)):
-            x1 -= self.snake_block
-            cnt += 1
-        return cnt-1
-    def distor(self):
-        x1, y1 = self.snake_list[0]
-        x1 += self.snake_block
-        cnt = 1
-        while (self.isSafe(x1, y1)):
-            x1 += self.snake_block
-            cnt += 1
-        return cnt-1
-    def distou(self):
-        x1, y1 = self.snake_list[0]
-        y1 -= self.snake_block
-        cnt = 1
-        while (self.isSafe(x1, y1)):
+    def disto(self,dir):
+        if(dir==0):
+            x1, y1 = self.snake_list[0]
             y1 -= self.snake_block
-            cnt += 1
-        return cnt-1
-    def distod(self):
-        x1, y1 = self.snake_list[0]
-        y1 += self.snake_block
-        cnt = 1
-        while (self.isSafe(x1, y1)):
+            cnt = 1
+            while (self.isSafe(x1, y1)):
+                y1 -= self.snake_block
+                cnt += 1
+        if(dir==1):
+            x1, y1 = self.snake_list[0]
+            x1 += self.snake_block
+            cnt = 1
+            while (self.isSafe(x1, y1)):
+                x1 += self.snake_block
+                cnt += 1
+        if dir==2:
+            x1, y1 = self.snake_list[0]
             y1 += self.snake_block
-            cnt += 1
+            cnt = 1
+            while (self.isSafe(x1, y1)):
+                y1 += self.snake_block
+                cnt += 1
+        if dir==3:
+            x1, y1 = self.snake_list[0]
+            x1 -= self.snake_block
+            cnt = 1
+            while (self.isSafe(x1, y1)):
+                x1 -= self.snake_block
+                cnt += 1
         return cnt-1
+    def new_disto(self,action):
+        new_dir = self.direction
+        if action == 0: new_dir -= 1
+        if action == 2: new_dir += 1
+        if new_dir < 0: new_dir = 3
+        if new_dir > 3: new_dir = 0
+        return self.disto(new_dir)
+    def isfood(self, action):#action=0 is food front, action=1 is food left
+        if(self.direction==0 and action==0):
+            return self.food[1]<self.snake_list[-1][1]
+        if(self.direction==0 and action==1):
+            return self.food[0]<self.snake_list[-1][0]
+        if(self.direction==1 and action==0):
+            return self.food[0]>self.snake_list[-1][0]
+        if(self.direction==1 and action==1):
+            return self.food[1]<self.snake_list[-1][1]
+        if(self.direction==2 and action==0):
+            return self.food[1]>self.snake_list[-1][1]
+        if(self.direction==2 and action==1):
+            return self.food[0]>self.snake_list[-1][0]
+        if(self.direction==3 and action==0):
+            return self.food[0]<self.snake_list[-1][0]
+        if(self.direction==3 and action==1):
+            return self.food[1]>self.snake_list[-1][1]
+
+    def new_step(self,action):
+        new_dir=self.direction
+        if action==0: new_dir-=1
+        if action==2: new_dir+=1
+        if new_dir<0: new_dir=3
+        if new_dir>3: new_dir=0
+        return self.step(new_dir)
     def step(self, action):
         x1, y1 = self.snake_list[-1]
         if len(self.snake_list) > self.snake_length:

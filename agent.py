@@ -19,7 +19,7 @@ class Agent:
         self.epsilon = 0  # randomness
         self.gamma = 0.9  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
-        self.model = Linear_QNet(5**2+5, 256,128, 1)
+        self.model = Linear_QNet(6, 256,128, 1)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
     def get_state(self, game):
@@ -27,14 +27,14 @@ class Agent:
         snake_block = game.snake_block
         head = game.snake_list[0]
         food = game.food
-        state = []
-        for i in range (0,game.block_count):
-            for j in range (0,game.block_count):
-                state.append(game.isSafe(i,j))
-        state.append(head[0])
-        state.append(head[1])
-        state.append(food[0])
-        state.append(food[1])
+        state = [
+            game.new_disto(0),
+            game.new_disto(1),
+            game.new_disto(2),
+            game.isfood(0),
+            game.isfood(1)
+        ]
+
         state.append(game.direction)
         return np.array(state, dtype=int)
 
@@ -57,18 +57,11 @@ class Agent:
 
     def get_action(self, state):
         # random moves: tradeoff exploration / exploitation
-        self.epsilon = 200 - self.n_games*0.5
+        self.epsilon = 100 - self.n_games*0.5
         final_move=0
         if random.randint(0, 200) < self.epsilon:
             while(True):
-                move = random.randint(0,400)%4
-                if (move==3 or move ==1 ) and (state[-1] ==3 or state[-1]==1):
-                    continue
-                elif (move == 2 or move == 4) and (state[-1] == 2 or state[-1] == 4):
-                    continue
-                else:
-                    break
-
+                move = random.randint(0,4)
             final_move=move
         else:
             state0 = torch.tensor(state, dtype=torch.float)
